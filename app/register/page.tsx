@@ -4,8 +4,8 @@ import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://zvydydhdxmivpmmsoietw.supabase.co";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseUrl  = "https://zvydydhdxmivpmmsoietw.supabase.co";
+const supabaseAnonKey = "sb_publishable_R06xCVtTHCUo8uejQbhjRA_2almHmeg";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function RegisterPage() {
