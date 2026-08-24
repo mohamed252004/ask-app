@@ -4,8 +4,8 @@ import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 
-const supabaseUrl = "https://zvydydhdxmivpmmsoietw.supabase.co";
-const supabaseAnonKey = "sb_publishable_R06xCVtTHCUo8uejQbhjRA_2almHmeg";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://zvydydhdxmivpmmsoietw.supabase.co";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_R06xCVtTHCUo8uejQbhjRA_2almHmeg";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function RegisterPage() {
@@ -30,9 +30,13 @@ export default function RegisterPage() {
     }
 
     try {
+      // 1. إنشاء المستخدم في Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: { username: cleanUsername },
+        },
       });
 
       if (authError) {
@@ -42,12 +46,16 @@ export default function RegisterPage() {
       }
 
       if (authData.user) {
-        const { error: profileError } = await supabase.from("profiles").insert([
-          { id: authData.user.id, username: cleanUsername },
+        // 2. إدخال أو تحديث البيانات في جدول profiles
+        const { error: profileError } = await supabase.from("profiles").upsert([
+          {
+            id: authData.user.id,
+            username: cleanUsername,
+          },
         ]);
 
         if (profileError) {
-          setErrorMsg(profileError.message);
+          setErrorMsg("اسم المستخدم هذا مأخوذ بالفعل، اختر اسماً آخر");
           setLoading(false);
           return;
         }
@@ -56,7 +64,7 @@ export default function RegisterPage() {
         router.push("/dashboard");
       }
     } catch (err: any) {
-      setErrorMsg(err?.message || "حدث خطأ في الاتصال، حاول مجدداً");
+      setErrorMsg(err?.message || "حدث خطأ أثناء الاتصال بالشبكة");
       setLoading(false);
     }
   };
