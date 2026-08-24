@@ -4,8 +4,8 @@ import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 
-const supabaseUrl = "https://zvydydhdxmivpmmsoietw.supabase.co";
-const supabaseAnonKey = "sb_publishable_R06xCVtTHCUo8uejQbhjRA_2almHmeg";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://zvydydhdxmivpmmsoietw.supabase.co";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function RegisterPage() {
@@ -29,40 +29,41 @@ export default function RegisterPage() {
       return;
     }
 
-    // 1. إنشاء حساب في Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (authError) {
-      setErrorMsg(authError.message);
-      setLoading(false);
-      return;
-    }
-
-    if (authData.user) {
-      // 2. ربط الـ Username بالبروفايل
-      const { error: profileError } = await supabase.from("profiles").insert([
-        {
-          id: authData.user.id,
-          username: cleanUsername,
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username: cleanUsername },
         },
-      ]);
+      });
 
-      if (profileError) {
-        if (profileError.code === "23505") {
-          setErrorMsg("اسم المستخدم هذا مأخوذ بالفعل، جرب اسماً آخر");
-        } else {
-          setErrorMsg(profileError.message);
-        }
+      if (authError) {
+        setErrorMsg(authError.message);
         setLoading(false);
         return;
       }
 
-      // حفظ الـ username في الـ localStorage لتسهيل الجلسة
-      localStorage.setItem("ask_username", cleanUsername);
-      router.push("/dashboard");
+      if (authData.user) {
+        const { error: profileError } = await supabase.from("profiles").upsert([
+          {
+            id: authData.user.id,
+            username: cleanUsername,
+          },
+        ]);
+
+        if (profileError) {
+          setErrorMsg("اسم المستخدم هذا مأخوذ بالفعل، اختر اسماً آخر");
+          setLoading(false);
+          return;
+        }
+
+        localStorage.setItem("ask_username", cleanUsername);
+        router.push("/dashboard");
+      }
+    } catch (err: any) {
+      setErrorMsg("حدث خطأ في الاتصال، حاول مجدداً");
+      setLoading(false);
     }
   };
 
